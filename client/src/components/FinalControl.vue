@@ -8,6 +8,7 @@
  * 다음 단계 요청에 보고 있던 단계를 함께 보내 중복 클릭·관리자 2명 동시 조작을 막는다 (서버 stale 거부).
  */
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { GroupInfo } from '../../../shared/types'
 import { FINAL_STEP_LABELS, ISSUE_TEAM_CODE, RESOURCE_LABELS, type AdminGameView, type Tiebreak } from '../../../shared/game'
 import { api } from '../lib/api'
@@ -17,6 +18,7 @@ import ModalDialog from './ModalDialog.vue'
 import ResultsBoard from './ResultsBoard.vue'
 
 const props = defineProps<{ groups: GroupInfo[] }>()
+const router = useRouter()
 const game = useGameStore()
 const view = computed(() => game.admin!)
 const f = computed(() => view.value.state.final!)
@@ -147,6 +149,7 @@ function recompute() {
           <button :disabled="busy" @click="modal = 'spy'">테러리스트 공개 →</button>
         </template>
         <button v-else-if="f.step === 'spy'" class="danger" :disabled="busy" @click="modal = 'end'">게임 끝내기</button>
+        <button v-if="view.state.results" class="secondary" @click="router.push('/prizes')">상금 계산</button>
       </div>
     </template>
 

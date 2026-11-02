@@ -9,6 +9,7 @@
  * - 이주 (docs/100 N3): 참가자 POST /migration/request · /migration/:id/cancel, 받는 팀 리더 POST /migration/:id/decide, 관리자 POST /admin/migration/:id/cancel
  * - 테러리스트 (docs/100 N4): 참가자 GET·POST /game/fate (준비 상태 운명의 카드), 관리자 PUT /admin/spies (후보 중 지정)
  * - 최종장 (docs/100 N2): 관리자 POST /admin/game/life-vote (마지막 라운드 안건), /admin/final/close · tiebreak · next · recompute, 참가자 POST /final/vote
+ * - 상금 계산: 관리자 GET /admin/prizes (발표된 정산으로 분배 방식별 상금 + 테러리스트 보상, server/src/prize.ts)
  * - 참가자(준비 상태): POST /game/join 팀 선택. 시작 전에는 팀 게임 정보를 주지 않는다
  * - 보석·골드 발행 (docs/97): 화이트·옐로우 리더 POST /issue/request → 즉시 발행 (docs/103 §9)
  * - 전쟁 (docs/99, docs/103 §4·§12): 리더 POST /war/declare → 즉시 시작, 관리자 POST /admin/war/cost (다음 날 비용) · /admin/war/allow (다음 라운드 허용/제재) · /admin/war/:id/resolve
@@ -37,7 +38,7 @@ import { allLivesDone, getLifeSubmission, submitLife } from '../db/life.js'
 import { cancelActiveTrade, executeTrade, getActiveTrade, getActiveTradeForTeam } from '../db/trades.js'
 import { getAdminIssues, getTeamIssue, issueTeamId, requestIssue } from '../db/issuance.js'
 import {
-  advanceFinal, castFinalVote, closeFinalVotes, finalVoteProgress, getMyFinalVote, recomputeResults, setLifeVote, setTiebreak,
+  advanceFinal, castFinalVote, closeFinalVotes, finalVoteProgress, getMyFinalVote, getPrizeView, recomputeResults, setLifeVote, setTiebreak,
 } from '../db/final.js'
 import { listAids, recordAid } from '../db/council.js'
 import { declareWar, describeCost, getWarCost, getWarOfDay, getWarRule, isWarAllowed, resolveWar, setWarCost, setWarRule } from '../db/war.js'
@@ -504,6 +505,11 @@ gameRouter.post('/admin/final/recompute', requireRole('admin'), handle(null, (re
   emit('game', 'all', null, 'final.settled', `정산 (다시 계산): ${resultsText(r)}`, req.auth!.sub)
   res.json(adminView())
 }))
+
+/** 상금 계산: 발표된 정산으로 분배 방식별 상금과 테러리스트 보상을 계산한다 */
+gameRouter.get('/admin/prizes', requireRole('admin'), (_req, res) => {
+  res.json(getPrizeView())
+})
 
 /**
  * 리셋: 참가자·진행자 계정 삭제, 기록·알림 전부 삭제 → 설정 단계. 리셋한 사람이 진행자면 본인 계정도 지워진다.

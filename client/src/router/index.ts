@@ -12,6 +12,7 @@ export const router = createRouter({
     { path: '/', redirect: () => useAuthStore().homePath },
     { path: '/login', component: () => import('../views/LoginView.vue'), meta: { public: true } },
     { path: '/admin', component: () => import('../views/AdminView.vue'), meta: { roles: ['admin'] } },
+    { path: '/prizes', component: () => import('../views/PrizeView.vue'), meta: { roles: ['admin'] } },
     { path: '/present', component: () => import('../views/PresentView.vue'), meta: { roles: ['presenter', 'admin'] } },
     { path: '/group', component: () => import('../views/GroupView.vue'), meta: { roles: ['member'] } },
     { path: '/rules', component: () => import('../views/RulesView.vue') },

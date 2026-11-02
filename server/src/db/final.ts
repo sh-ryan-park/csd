@@ -17,10 +17,11 @@ import { db } from './index.js'
 import { listGroupMembers, listGroups } from './users.js'
 import { applyDeltas, getAllResources } from './resources.js'
 import { lastRoundAmounts } from './issuance.js'
-import { listSpyStatus } from './spy.js'
+import { eliminatedCount, listSpyStatus } from './spy.js'
 import { GameError } from './gameError.js'
+import { computePrizes, PRIZE_TOTAL, PRIZE_UNIT } from '../prize.js'
 import { emptyResources, settleShares, TIEBREAK_ADOPTS } from '../../../shared/game.js'
-import type { FinalState, FinalStep, GameResults, Phase, SpyStatus, Tiebreak } from '../../../shared/game.js'
+import type { FinalState, FinalStep, GameResults, Phase, PrizeView, SpyStatus, Tiebreak } from '../../../shared/game.js'
 
 type Choice = 'gem' | 'gold'
 
@@ -215,6 +216,33 @@ export function recomputeResults(): GameResults {
     update('results = ?', [JSON.stringify(results)])
     return results
   })()
+}
+
+/** 상금 계산 화면 (관리자). 발표된 정산 값으로 계산하고, 그 뒤 재화·인원이 바뀌었으면 알린다 */
+export function getPrizeView(): PrizeView {
+  const r = db.prepare('SELECT final_step, results FROM game WHERE id = 1').get() as { final_step: FinalStep | null; results: string | null }
+  const dead = eliminatedCount()
+  if (!r.results) return { total: PRIZE_TOTAL, unit: PRIZE_UNIT, results: null, dead, columns: [], plans: [], spies: [], warnings: [] }
+  const results = JSON.parse(r.results) as GameResults
+  const spies = listSpyStatus()
+  const { columns, plans, warnings } = computePrizes(results.teams, dead, spies.reduce((sum, s) => sum + s.reward, 0))
+  const now = new Map(computeResults(results.adopted).teams.map((t) => [t.teamId, t]))
+  if (results.teams.some((t) => t.alive !== now.get(t.teamId)?.alive || t.holding !== now.get(t.teamId)?.holding)) {
+    warnings.unshift(`정산 발표 뒤 팀 재화나 인원이 바뀌었어요. 이 화면은 발표된 정산 값으로 계산해요.${r.final_step === 'settle' ? ' 최종장 정산의 "다시 계산"을 누르면 반영돼요.' : ''}`)
+  }
+  return {
+    total: PRIZE_TOTAL,
+    unit: PRIZE_UNIT,
+    results,
+    dead,
+    columns,
+    plans,
+    spies: spies.map((s) => {
+      const column = columns.findIndex((c) => c.teamId === (s.alive ? s.teamId : null))
+      return { ...s, column: column < 0 ? null : column }
+    }),
+    warnings,
+  }
 }
 
 // ---- 공개 상태 ----

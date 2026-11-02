@@ -628,7 +628,12 @@ const teamStyle = (id: number | null) => (id && team(id) ? { '--team': teamInk(t
 
     <!-- 최종장 (docs/100 N2) -->
     <FinalControl v-if="s.status === 'final' && s.final" :groups="groups" />
-    <ResultsBoard v-else-if="s.status === 'ended' && s.final" :final="s.final" :results="s.results" />
+    <template v-else-if="s.status === 'ended' && s.final">
+      <ResultsBoard :final="s.final" :results="s.results" />
+      <div v-if="s.results" class="row" style="margin-top: 10px">
+        <button class="secondary" @click="router.push('/prizes')">상금 계산</button>
+      </div>
+    </template>
 
     <template v-if="s.status === 'running'">
       <h3>초기 재화 합계 <span class="muted">(프레젠테이션 공개)</span></h3>

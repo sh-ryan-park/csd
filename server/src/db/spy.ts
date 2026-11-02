@@ -75,6 +75,13 @@ function startRoster(): number[] {
   return raw ? (JSON.parse(raw) as number[]) : []
 }
 
+/** 시작 이후 탈락자 수 = 시작 명단 중 지금 비활성인 사람 */
+export function eliminatedCount(): number {
+  const roster = startRoster()
+  if (!roster.length) return 0
+  return (db.prepare(`SELECT COUNT(*) AS n FROM users WHERE active != 1 AND id IN (${roster.map(() => '?').join(',')})`).get(...roster) as { n: number }).n
+}
+
 /** 테러리스트 현황 (시작 후). 탈락자 = 시작 명단 중 지금 비활성인 사람 (본인 제외) */
 export function listSpyStatus(): SpyStatus[] {
   const roster = startRoster()

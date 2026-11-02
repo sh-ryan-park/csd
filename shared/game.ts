@@ -331,6 +331,65 @@ export interface GameResults {
   publishedAt: string
 }
 
+// ---- 상금 계산 (관리자 /prizes). 금액·규칙은 서버 prize.ts 에만 있다 ----
+
+/** 상금을 받는 칸: 등수별 팀 또는 탈락자 전체 */
+export interface PrizeColumn {
+  /** 1등~4등, 탈락 */
+  label: string
+  /** 탈락 칸은 null */
+  teamId: number | null
+  name: string
+  color: string
+  people: number
+}
+
+export interface PrizeCell {
+  /** 인별 금액 */
+  each: number
+  /** 팀 총합 */
+  total: number
+  /** 위 등수보다 인별 금액이 많다 */
+  eachFlip: boolean
+  /** 위 등수보다 팀 총합이 많다 (탈락 칸은 보지 않는다) */
+  totalFlip: boolean
+}
+
+export interface PrizePlan {
+  /** 분배 방식 이름 */
+  name: string
+  rule: string
+  /** 예외로 계산한 판의 표시 */
+  note: string
+  /** columns 와 같은 순서. 계산할 수 없는 방식은 null */
+  cells: PrizeCell[] | null
+  /** 잔액 = 총액 − 팀 총합의 합 */
+  left: number | null
+  /** 총 지출 = 팀 총합의 합 + 테러리스트 보상 */
+  spend: number | null
+}
+
+export interface PrizeSpy extends SpyStatus {
+  /** 소속 칸 (columns 번호). 탈락했으면 탈락 칸, 찾지 못하면 null */
+  column: number | null
+}
+
+export interface PrizeView {
+  /** 상금 총액 */
+  total: number
+  /** 인별 금액 단위. 이 금액 미만은 버린다 */
+  unit: number
+  /** 발표된 정산. 없으면 계산할 수 없다 */
+  results: GameResults | null
+  /** 시작 이후 탈락자 수 */
+  dead: number
+  columns: PrizeColumn[]
+  plans: PrizePlan[]
+  spies: PrizeSpy[]
+  /** 진행자가 확인할 점 */
+  warnings: string[]
+}
+
 // ---- 리더 선출 (팀원 전원 투표) ----
 
 /** 리더 선정 (진행자 수동 지정, docs/100 §7-6). pending: 지정 대기 · done: 지정 완료(자동 포함) */
